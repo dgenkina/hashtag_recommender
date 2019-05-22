@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy
+from scipy import sparse
 from scipy.sparse import dok_matrix, coo_matrix
 import progressbar
 import re
@@ -63,8 +64,8 @@ for indexes in progressbar.progressbar(index_list):
                 col.append(ind1)
                 data.append(1)              
                 num += 1
-co_occurance_matrix = coo_matrix((data,(row,col)),shape = (len(all_hashtags),len(all_hashtags)),dtype=int)
-scipy.sparse.save_npz('co_occurance_matrix',co_occurance_matrix)
+co_occurance_matrix = coo_matrix((data,(row,col)),shape = (len(all_hashtags),len(all_hashtags)),dtype=float)
+sparse.save_npz('co_occurance_matrix',co_occurance_matrix)
                 
 occurence = np.zeros(len(all_hashtags_list))
 scaled_favs = np.zeros(len(all_hashtags_list))
@@ -84,3 +85,11 @@ hashtag_df = pd.DataFrame({'hashtags':all_hashtags_list,'occurence':occurence,
                            'scaled_favs':scaled_favs,'scaled_rts':scaled_rts})
     
 hashtag_df.to_csv('hashtags.csv')
+occurence = hashtag_df['occurence'].tolist()
+co_occurance_matrix = co_occurance_matrix.tocsr()
+
+
+for i in progressbar.progressbar(range(co_occurance_matrix.shape[0])): 
+    co_occurance_matrix[i] = co_occurance_matrix[i]/float(occurence[i])
+    
+sparse.save_npz('co_occurance_norm',co_occurance_matrix)
