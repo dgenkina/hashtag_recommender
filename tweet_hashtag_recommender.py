@@ -11,16 +11,17 @@ import pandas as pd
 import scipy
 from scipy import sparse
 from scipy.sparse import dok_matrix, coo_matrix
-import progressbar
+#import progressbar
 import re
 pattern = re.compile('[\W_]+')
 
-df = pd.read_csv('dashboard_x_usa_x_filter_nativeretweets.csv')
+df = pd.read_csv('dashboard_x_usa_x_filter_nativeretweets.csv', encoding='iso-8859-1')
+df = df[df['Favs']+df['RTs']>0]
 
 tweets = df['Tweet content']
 hashtags = []
 for tweet in tweets:
-    tweet = tweet.decode('iso-8859-1')
+   # tweet = tweet.decode('iso-8859-1')
     hashtags_local = set()
     for tweet_word in tweet.split():
         if tweet_word.startswith("#"):
@@ -37,7 +38,7 @@ all_hashtags_list = list(all_hashtags)
 
 
 index_list = []
-for hashtag_set in progressbar.progressbar(hashtags):
+for hashtag_set in hashtags: #progressbar.progressbar(hashtags):
     local_list = []
     for ind, tag in enumerate(hashtag_set):
         ind = all_hashtags_list.index(tag)
@@ -47,13 +48,13 @@ for hashtag_set in progressbar.progressbar(hashtags):
 df_eng['hashtag_indexes'] = index_list
 df_eng['scaled_favs'] = df_eng['Favs']/df_eng['Followers']
 df_eng['scaled_rts'] = df_eng['RTs']/df_eng['Followers']
-df_eng.to_csv('eng_tweets.csv')
+df_eng.to_csv('eng_tweets_short.csv')
 
 num = 0
 row = []
 col = []
 data = []
-for indexes in progressbar.progressbar(index_list):
+for indexes in index_list: #progressbar.progressbar(index_list):
     if len(indexes)>1:
         for i,ind1 in enumerate(indexes):
             for ind2 in indexes[i:]:
@@ -65,7 +66,7 @@ for indexes in progressbar.progressbar(index_list):
                 data.append(1)              
                 num += 1
 co_occurance_matrix = coo_matrix((data,(row,col)),shape = (len(all_hashtags),len(all_hashtags)),dtype=float)
-sparse.save_npz('co_occurance_matrix',co_occurance_matrix)
+sparse.save_npz('co_occurance_matrix_short',co_occurance_matrix)
                 
 occurence = np.zeros(len(all_hashtags_list))
 scaled_favs = np.zeros(len(all_hashtags_list))
@@ -74,7 +75,7 @@ sf = df_eng['scaled_favs'].tolist()
 sr = df_eng['scaled_rts'].tolist()
 
 i = 0
-for indexes in progressbar.progressbar(index_list):
+for indexes in index_list: #progressbar.progressbar(index_list):
     for index in indexes:
         occurence[index] += 1
         scaled_favs[index] += sf[i]
@@ -84,12 +85,12 @@ for indexes in progressbar.progressbar(index_list):
 hashtag_df = pd.DataFrame({'hashtags':all_hashtags_list,'occurence':occurence,
                            'scaled_favs':scaled_favs,'scaled_rts':scaled_rts})
     
-hashtag_df.to_csv('hashtags.csv')
+hashtag_df.to_csv('hashtags_short.csv')
 occurence = hashtag_df['occurence'].tolist()
 co_occurance_matrix = co_occurance_matrix.tocsr()
 
 
-for i in progressbar.progressbar(range(co_occurance_matrix.shape[0])): 
+for i in range(co_occurance_matrix.shape[0]): #progressbar.progressbar(range(co_occurance_matrix.shape[0])): 
     co_occurance_matrix[i] = co_occurance_matrix[i]/float(occurence[i])
     
-sparse.save_npz('co_occurance_norm',co_occurance_matrix)
+sparse.save_npz('co_occurance_norm_short',co_occurance_matrix)
