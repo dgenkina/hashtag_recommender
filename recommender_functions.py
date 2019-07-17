@@ -15,19 +15,31 @@ import pickle
 
 def nodes_connected(graph, u, v):
      return u in graph.neighbors(v)
+ 
 
-
-def make_graph(hashtag_list_of_lists,success_list,savename='instagraph'):
+def make_graph(hashtag_list_of_lists,success_list,timestamp_list,savename='instagraph'):
     tag_graph = nx.Graph()
     for ind,hashtag_list in progressbar.progressbar(enumerate(hashtag_list_of_lists)):
         for hashtag in hashtag_list:
             if hashtag in tag_graph.nodes:
                 success = tag_graph.nodes[hashtag]['success'] + success_list[ind]
-                occurence = tag_graph.nodes[hashtag]['success'] + 1
+                occurence = tag_graph.nodes[hashtag]['occurence'] + 1.0
+                
+                successes = list(tag_graph.nodes[hashtag]['successes'])
+                successes.append(success_list[ind])
+                successes = tuple(successes)
+                
+                timestamps = list(tag_graph.nodes[hashtag]['timestamps'])
+                timestamps.append(timestamp_list[ind])
+                timestamps = tuple(timestamps)
+                
             else:
                 success = success_list[ind]
-                occurence = 1                
-                tag_graph.add_node(hashtag, success=success,occurence=occurence)
+                occurence = 1.0  
+                successes = tuple([success_list[ind]])
+                timestamps = tuple([timestamp_list[ind]])
+            tag_graph.add_node(hashtag, success=success,occurence=occurence,
+                              successes = successes, timestamps=timestamps)
         
         for a,b in itertools.combinations(hashtag_list,2):
             if nodes_connected(tag_graph,a,b):
@@ -37,8 +49,6 @@ def make_graph(hashtag_list_of_lists,success_list,savename='instagraph'):
     with open(savename, 'wb') as f:
         pickle.dump(tag_graph,f)
     return tag_graph
-    
-    
     
     
 def make_index_list_of_lists(hashtag_list_of_lists, savename = 'hashtags_and_indeces'):
